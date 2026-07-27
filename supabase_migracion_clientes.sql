@@ -23,9 +23,15 @@ CREATE TABLE IF NOT EXISTS cliente_notas (
 ALTER TABLE cliente_notas ENABLE ROW LEVEL SECURITY;
 
 -- 5. Política para que cada corredor vea sus propias notas
-CREATE POLICY "Corredores ven sus propias notas"
-ON cliente_notas FOR ALL
-USING (corredor_id = auth.uid());
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Corredores ven sus propias notas' AND tablename = 'cliente_notas'
+  ) THEN
+    CREATE POLICY "Corredores ven sus propias notas"
+    ON cliente_notas FOR ALL
+    USING (corredor_id = auth.uid());
+  END IF;
+END $$;
 
 -- 6. Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_clientes_activo ON clientes(activo);

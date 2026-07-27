@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useTheme } from '../context/ThemeContext'
 import { useProfile } from '../context/ProfileContext'
-import { supabase } from '../services/supabase'
 
 export default function Navbar() {
   const location = useLocation()
@@ -16,7 +15,7 @@ export default function Navbar() {
     { to: '/recorrida', label: 'Recorrida', perm: 'recorrida' },
     { to: '/pedidos', label: 'Pedidos', perm: 'pedidos' },
     { to: '/clientes', label: 'Clientes', perm: 'clientes' },
-  ]
+  ].filter(link => hasPermission(link.perm))
 
   if (hasPermission('adminDashboard')) {
     links.push({ to: '/admin/dashboard', label: 'Dashboard', perm: 'adminDashboard' })
@@ -35,19 +34,11 @@ export default function Navbar() {
   }
 
   const perfilLabel = {
+    dios: 'Dios',
     admin: 'Admin',
     corredor: 'Corredor',
     catalogo: 'Catálogo',
     consulta: 'Consulta',
-  }
-
-  const handleLogout = async () => {
-    try {
-      localStorage.removeItem('danpa_cart')
-      await supabase.auth.signOut()
-    } catch (err) {
-      console.error('Error during logout:', err.message)
-    }
   }
 
   return (
@@ -109,15 +100,6 @@ export default function Navbar() {
             )}
           </button>
 
-          <button
-            onClick={handleLogout}
-            className="ml-1 px-3 py-1.5 text-sm font-medium transition-colors duration-150"
-            style={{ color: 'var(--ink-muted)' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--ink-secondary)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--ink-muted)'}
-          >
-            Salir
-          </button>
         </div>
       </div>
     </nav>

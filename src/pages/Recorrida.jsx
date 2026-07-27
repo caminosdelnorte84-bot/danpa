@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../services/supabase'
+import { useProfile } from '../context/ProfileContext'
 
 const markerVerde = new L.DivIcon({
   className: '',
@@ -59,6 +60,7 @@ function fechaLocal() {
 }
 
 export default function Recorrida() {
+  const { profile } = useProfile()
   const [clientes, setClientes] = useState([])
   const [visitas, setVisitas] = useState([])
   const [fecha, setFecha] = useState(fechaLocal())
@@ -73,18 +75,24 @@ export default function Recorrida() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user || cancelled) { setLoading(false); return }
 
-        const { data: cli } = await supabase
+        let cliQuery = supabase
           .from('clientes')
           .select('*')
-          .eq('corredor_id', user.id)
           .eq('activo', true)
           .order('nombre')
 
-        const { data: vis } = await supabase
+        let visQuery = supabase
           .from('visitas')
           .select('*, clientes(nombre)')
-          .eq('corredor_id', user.id)
           .eq('fecha', fecha)
+
+        if (profile?.perfil !== 'admin') {
+          cliQuery = cliQuery.eq('corredor_id', user.id)
+          visQuery = visQuery.eq('corredor_id', user.id)
+        }
+
+        const { data: cli } = await cliQuery
+        const { data: vis } = await visQuery
 
         if (!cancelled) {
           setClientes(cli || [])
@@ -97,25 +105,31 @@ export default function Recorrida() {
     }
     load()
     return () => { cancelled = true }
-  }, [fecha])
+  }, [fecha, profile?.perfil])
 
   const fetchData = async () => {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setLoading(false); return }
 
-    const { data: cli } = await supabase
+    let cliQuery = supabase
       .from('clientes')
       .select('*')
-      .eq('corredor_id', user.id)
       .eq('activo', true)
       .order('nombre')
 
-    const { data: vis } = await supabase
+    let visQuery = supabase
       .from('visitas')
       .select('*, clientes(nombre)')
-      .eq('corredor_id', user.id)
       .eq('fecha', fecha)
+
+    if (profile?.perfil !== 'admin') {
+      cliQuery = cliQuery.eq('corredor_id', user.id)
+      visQuery = visQuery.eq('corredor_id', user.id)
+    }
+
+    const { data: cli } = await cliQuery
+    const { data: vis } = await visQuery
 
     setClientes(cli || [])
     setVisitas(vis || [])

@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase'
 import { useProfile } from '../context/ProfileContext'
 
 const PERFIL_OPTIONS = [
+  { value: 'dios', label: 'Dios' },
   { value: 'admin', label: 'Administrador' },
   { value: 'corredor', label: 'Corredor/Vendedor' },
   { value: 'catalogo', label: 'Gestor de Catálogo' },
@@ -10,6 +11,7 @@ const PERFIL_OPTIONS = [
 ]
 
 const PERFIL_COLORS = {
+  dios: { bg: 'var(--danger-bg)', text: 'var(--danger)' },
   admin: { bg: 'var(--brand-light)', text: 'var(--brand)' },
   corredor: { bg: 'var(--surface-2)', text: 'var(--ink-secondary)' },
   catalogo: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
@@ -55,7 +57,6 @@ export default function UsuariosAdmin() {
       .select('*')
       .order('created_at', { ascending: false })
     setUsuarios(data || [])
-    setLoading(false)
   }
 
   const filtrados = useMemo(() => {
@@ -77,6 +78,14 @@ export default function UsuariosAdmin() {
   }))
 
   const handleGuardar = async (id) => {
+    if (id === currentProfile?.id && formEdit.perfil !== currentProfile?.perfil) {
+      alert('No puedes cambiar tu propio perfil')
+      return
+    }
+    if (formEdit.perfil !== 'admin' && usuarios.filter(u => u.perfil === 'admin').length <= 1 && usuarios.find(u => u.id === id)?.perfil === 'admin') {
+      alert('No se puede degradar al único administrador')
+      return
+    }
     try {
       const updates = { perfil: formEdit.perfil }
       if (formEdit.nombre !== undefined) updates.nombre = formEdit.nombre

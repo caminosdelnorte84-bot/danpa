@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../services/supabase'
 import { useCart } from '../context/CartContext'
+import { useProfile } from '../context/ProfileContext'
 
 function SkeletonCard() {
   return (
@@ -40,6 +41,7 @@ export default function Catalogo() {
   const [agregado, setAgregado] = useState(null)
   const [animando, setAnimando] = useState(null)
   const { addItem } = useCart()
+  const { hasPermission } = useProfile()
 
   const timerAnimando = useRef(null)
   const timerAgregado = useRef(null)
@@ -153,6 +155,7 @@ export default function Catalogo() {
                 </div>
 
                 {/* Signature element */}
+                {hasPermission('carrito') && (
                 <button
                   onClick={() => handleAdd(producto)}
                   disabled={agregado === producto.id || producto.stock <= 0}
@@ -172,6 +175,7 @@ export default function Catalogo() {
                 >
                   {producto.stock <= 0 ? 'Sin stock' : agregado === producto.id ? '✓ Agregado' : 'Agregar al carrito'}
                 </button>
+                )}
               </div>
             </div>
           ))}

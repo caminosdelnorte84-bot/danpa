@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../services/supabase'
+import { useProfile } from '../context/ProfileContext'
 
 const FILTROS = ['todos', 'Pendiente', 'En camino', 'Entregado', 'Cancelado', 'Rechazado']
 const FILTROS_PAGO = ['todos', 'pagado', 'parcial', 'no_pagado']
@@ -46,7 +47,13 @@ function SkeletonCard() {
   )
 }
 
+function fechaLocal() {
+  const d = new Date()
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+
 export default function Pedidos() {
+  const { profile } = useProfile()
   const [pedidos, setPedidos] = useState([])
   const [filtro, setFiltro] = useState('todos')
   const [filtroPago, setFiltroPago] = useState('todos')
@@ -64,11 +71,14 @@ export default function Pedidos() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || cancelled) return
-      const { data } = await supabase
+      let query = supabase
         .from('pedidos')
         .select('*, clientes(nombre, telefono)')
-        .eq('corredor_id', user.id)
         .order('created_at', { ascending: false })
+      if (profile?.perfil !== 'admin') {
+        query = query.eq('corredor_id', user.id)
+      }
+      const { data } = await query
       if (!cancelled) {
         setPedidos(data || [])
         setLoading(false)
@@ -76,7 +86,7 @@ export default function Pedidos() {
     }
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [profile?.perfil])
 
   const fetchDetalle = async (pedidoId) => {
     if (detalles[pedidoId]) return
@@ -225,11 +235,6 @@ export default function Pedidos() {
     if (horas < 1) return 'Recién'
     if (horas < 24) return `${Math.floor(horas)}h`
     return `${Math.floor(horas / 24)}d`
-  }
-
-  const fechaLocal = () => {
-    const d = new Date()
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
   }
 
   const exportarCSV = () => {

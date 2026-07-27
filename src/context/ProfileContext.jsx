@@ -5,9 +5,10 @@ const ProfileContext = createContext()
 
 const PERMISOS = {
   admin:     { catalogo: true, carrito: true, clientes: true, pedidos: true, recorrida: true, adminProductos: true, adminUsuarios: true, adminDashboard: true, adminCobros: true },
-  corredor:  { catalogo: true, carrito: true, clientes: true, pedidos: true, recorrida: true, adminProductos: false, adminUsuarios: false },
-  catalogo:  { catalogo: true, carrito: false, clientes: false, pedidos: false, recorrida: false, adminProductos: true, adminUsuarios: false },
-  consulta:  { catalogo: true, carrito: false, clientes: false, pedidos: false, recorrida: false, adminProductos: false, adminUsuarios: false },
+  corredor:  { catalogo: true, carrito: true, clientes: true, pedidos: true, recorrida: true, adminProductos: false, adminUsuarios: false, adminDashboard: false, adminCobros: false },
+  catalogo:  { catalogo: true, carrito: false, clientes: false, pedidos: false, recorrida: false, adminProductos: false, adminUsuarios: false, adminDashboard: false, adminCobros: false },
+  consulta:  { catalogo: true, carrito: false, clientes: false, pedidos: false, recorrida: false, adminProductos: false, adminUsuarios: false, adminDashboard: false, adminCobros: false },
+  dios:      { catalogo: true, carrito: true, clientes: true, pedidos: true, recorrida: true, adminProductos: true, adminUsuarios: true, adminDashboard: true, adminCobros: true },
 }
 
 const PERFIL_LABELS = {
@@ -15,6 +16,7 @@ const PERFIL_LABELS = {
   corredor: 'Corredor/Vendedor',
   catalogo: 'Gestor de Catálogo',
   consulta: 'Solo Consulta',
+  dios: 'Dios',
 }
 
 export function ProfileProvider({ children }) {
@@ -31,13 +33,21 @@ export function ProfileProvider({ children }) {
     const { data: authUser } = await supabase.auth.getUser()
     const email = authUser?.user?.email || ''
 
-    const { data, error: _fetchError } = await supabase
+    const { data, error } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', userId)
       .maybeSingle()
 
-    if (!data) {
+    console.log('[ProfileDebug]', { userId, email, perfil: data?.perfil, data, error })
+
+    if (data) {
+      if (data.activo === false) {
+        setProfile({ ...data, activo: false, blocked: true, permisos: {} })
+      } else {
+        setProfile({ ...data, permisos: PERMISOS[data.perfil] || PERMISOS.consulta })
+      }
+    } else {
       const { error: insertError } = await supabase.from('usuarios').insert({
         id: userId,
         email,
@@ -45,66 +55,42 @@ export function ProfileProvider({ children }) {
         perfil: 'corredor',
         activo: true,
       })
-      if (insertError) {
-        setProfile({
-          id: userId,
-          email,
-          nombre: '',
-          perfil: 'corredor',
-          activo: true,
-          permisos: PERMISOS.corredor,
-        })
-        setLoading(false)
-        return
-      }
 
-      const { data: newData } = await supabase
+      const { data: afterInsert } = await supabase
         .from('usuarios')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
-      if (newData) {
-        setProfile({
-          ...newData,
-          permisos: PERMISOS[newData.perfil] || PERMISOS.consulta,
-        })
+      if (afterInsert) {
+        setProfile({ ...afterInsert, permisos: PERMISOS[afterInsert.perfil] || PERMISOS.consulta })
+      } else if (insertError) {
+        setProfile({ id: userId, email, nombre: '', perfil: 'consulta', activo: true, permisos: PERMISOS.consulta })
       } else {
-        setProfile({
-          id: userId,
-          email,
-          nombre: '',
-          perfil: 'corredor',
-          activo: true,
-          permisos: PERMISOS.corredor,
-        })
+        setProfile({ id: userId, email, nombre: '', perfil: 'corredor', activo: true, permisos: PERMISOS.corredor })
       }
-    } else {
-      setProfile({
-        ...data,
-        permisos: PERMISOS[data.perfil] || PERMISOS.consulta,
-      })
     }
     setLoading(false)
   }
 
   useEffect(() => {
     let cancelled = false
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!cancelled && session?.user) {
-        await fetchProfile(session.user.id)
-      } else if (!cancelled) {
-        setLoading(false)
-      }
-    }
-    init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (cancelled) return
       if (session?.user) {
         await fetchProfile(session.user.id)
       } else {
         setProfile(null)
+        setLoading(false)
+      }
+    })
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
         setLoading(false)
       }
     })
