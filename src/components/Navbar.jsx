@@ -11,7 +11,7 @@ export default function Navbar() {
 
   const links = [
     { to: '/', label: 'Catálogo', perm: 'catalogo' },
-    { to: '/carrito', label: 'Carrito', perm: 'carrito' },
+    { to: '/ventas', label: 'Ventas', perm: 'carrito' },
     { to: '/recorrida', label: 'Recorrida', perm: 'recorrida' },
     { to: '/pedidos', label: 'Pedidos', perm: 'pedidos' },
     { to: '/clientes', label: 'Clientes', perm: 'clientes' },
@@ -72,7 +72,7 @@ export default function Navbar() {
                 onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-secondary)' } }}
               >
                 {link.label}
-                {link.to === '/carrito' && itemCount > 0 && (
+                {link.to === '/ventas' && itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white rounded-full leading-none animate-[pulse_200ms_ease-out]" style={{ background: 'var(--brand)' }}>
                     {itemCount}
                   </span>

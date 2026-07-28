@@ -39,8 +39,6 @@ export function ProfileProvider({ children }) {
       .eq('id', userId)
       .maybeSingle()
 
-    console.log('[ProfileDebug]', { userId, email, perfil: data?.perfil, data, error })
-
     if (data) {
       if (data.activo === false) {
         setProfile({ ...data, activo: false, blocked: true, permisos: {} })

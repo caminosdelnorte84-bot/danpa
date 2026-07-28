@@ -4,9 +4,10 @@ import { supabase } from './services/supabase'
 import { CartProvider } from './context/CartContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { ProfileProvider } from './context/ProfileContext'
+import ErrorBoundary from './components/ErrorBoundary'
 import Navbar from './components/Navbar'
 import Catalogo from './pages/Catalogo'
-import Carrito from './pages/Carrito'
+import Ventas from './pages/Ventas'
 import Pedidos from './pages/Pedidos'
 import Clientes from './pages/Clientes'
 import ClienteDetalle from './pages/ClienteDetalle'
@@ -37,7 +38,8 @@ function AppContent() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Routes>
           <Route path="/" element={<Catalogo />} />
-          <Route path="/carrito" element={<Carrito />} />
+          <Route path="/ventas" element={<Ventas />} />
+          <Route path="/carrito" element={<Navigate to="/ventas" replace />} />
           <Route path="/pedidos" element={<Pedidos />} />
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/clientes/:id" element={<ClienteDetalle />} />
@@ -123,11 +125,13 @@ export default function App() {
             <div className="animate-spin rounded-full h-10 w-10 border-2" style={{ borderColor: 'var(--surface-2)', borderTopColor: 'var(--brand)' }} />
           </div>
         ) : (
-          <ProfileProvider>
-            <CartProvider>
-              <AppContent />
-            </CartProvider>
-          </ProfileProvider>
+          <ErrorBoundary>
+            <ProfileProvider>
+              <CartProvider>
+                <AppContent />
+              </CartProvider>
+            </ProfileProvider>
+          </ErrorBoundary>
         )}
       </BrowserRouter>
     </ThemeProvider>
